@@ -47,7 +47,28 @@ function structure_encoding($encoding, $msg_body){
 }
 
 
-function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i){
+function get_imap_title($str){
+
+	$mime = imap_mime_header_decode($str);
+
+	$title = "";
+
+	foreach($mime as $key => $m){
+
+		if(!check_utf8($m->charset)){
+
+			$title .= convert_to_utf8($m->charset, $m->text);
+		}else{
+
+			$title .= $m->text;
+		}
+	}
+
+	return $title;
+}
+
+
+function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i, $coder){
   if(isset($msg_structure->parts)){
 
     for($j = 1, $f = 2; $j < count($msg_structure->parts); $j++, $f++){
@@ -56,13 +77,13 @@ function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i){
 
         $mails_data[$i]["attachs"][$j]["type"] = $msg_structure->parts[$j]->subtype;
         $mails_data[$i]["attachs"][$j]["size"] = $msg_structure->parts[$j]->bytes;
-        $mails_data[$i]["attachs"][$j]["name"] = $msg_structure->parts[$j]->parameters[0]->value;
+        $mails_data[$i]["attachs"][$j]["name"] = get_imap_title($msg_structure->parts[$j]->parameters[0]->value);
         $mails_data[$i]["attachs"][$j]["file"] = structure_encoding(
           $msg_structure->parts[$j]->encoding,
           imap_fetchbody($connection, $i, $f)
         );
-
-        file_put_contents($dir.iconv("utf-8", "cp1251", $mails_data[$i]["attachs"][$j]["name"]), $mails_data[$i]["attachs"][$j]["file"]);
+        echo "<br><br><br>".imap_qprint($mails_data[$i]["attachs"][$j]["name"])."<br>".imap_qprint($coder)."<br><br>";
+        file_put_contents($dir.imap_qprint($mails_data[$i]["attachs"][$j]["name"]), $mails_data[$i]["attachs"][$j]["file"]);
       }
     }
   }
@@ -77,7 +98,7 @@ if ($my_box){
     $time = date("H-i-s");
     $h = imap_headerinfo($my_box, $i);
     $emailFrom = $h->from[0]->mailbox."@".$h->from[0]->host;
-    $dir = $direction.$emailFrom."_".$time."_".$i;
+    $dir = $direction.$emailFrom."_".$time."_".$i."\\";
     $bodyNameFile = $dir."\\"."body".$i.".txt";
     
     echo "<br>".$emailFrom;
@@ -90,11 +111,11 @@ if ($my_box){
       $body = iconv($struc->parts[0]->parameters[0]->value,'UTF-8',$body);
     }
     //echo "<br>".$body;
-    //$s = imap_fetch_overview($my_box, $i); 
+    $s = imap_fetch_overview($my_box, $i); 
     //print_r(imap_fetchbody($my_box, $i, '3'));
     print_r($struc);
    // print_r($s);
-    getInfile($struc, $direction, $mail_filetypes, $my_box, $i);
+    getInfile($struc, $dir, $mail_filetypes, $my_box, $i, $struc->parts[0]->parts[0]->parameters[0]->value);
     file_put_contents($bodyNameFile, $body);
   } 
 }
