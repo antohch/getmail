@@ -1,8 +1,75 @@
 <?php
 header("Content-Type: text/html; charset=utf-8");
 
+$server = "mail.krasnodar.ru";
+$port = "110";
+$protocol = "pop3";
+$secur = "notls";
+$log = "cb_eisk@msrsp.krasnodar.ru";
+$pas = "Bd9QMq2l";
+$direction = "D:\emailin\\";
+$mail_filetypes = array(
+	"MSWORD",
+  "BINARY"
+);
 
-$my_box = imap_open("{mail.krasnodar.ru:110/pop3/notls}", "cb_eisk@msrsp.krasnodar.ru", "Bd9QMq2l"); 
+
+function structure_encoding($encoding, $msg_body){
+
+	switch((int) $encoding){
+
+		case 4:
+			$body = imap_qprint($msg_body);
+			break;
+
+		case 3:
+			$body = imap_base64($msg_body);
+			break;
+
+		case 2:
+			$body = imap_binary($msg_body);
+			break;
+
+		case 1:
+			$body = imap_8bit($msg_body);
+			break;
+
+		case 0:
+			$body = $msg_body;
+			break;
+		
+		default:
+			$body = "";
+			break;
+	}
+
+	return $body;
+}
+
+
+function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i){
+  if(isset($msg_structure->parts)){
+
+    for($j = 1, $f = 2; $j < count($msg_structure->parts); $j++, $f++){
+
+      if(in_array($msg_structure->parts[$j]->subtype, $mail_filetypes)){
+
+        $mails_data[$i]["attachs"][$j]["type"] = $msg_structure->parts[$j]->subtype;
+        $mails_data[$i]["attachs"][$j]["size"] = $msg_structure->parts[$j]->bytes;
+        $mails_data[$i]["attachs"][$j]["name"] = $msg_structure->parts[$j]->parameters[0]->value;
+        $mails_data[$i]["attachs"][$j]["file"] = structure_encoding(
+          $msg_structure->parts[$j]->encoding,
+          imap_fetchbody($connection, $i, $f)
+        );
+
+        file_put_contents($dir.iconv("utf-8", "cp1251", $mails_data[$i]["attachs"][$j]["name"]), $mails_data[$i]["attachs"][$j]["file"]);
+      }
+    }
+  }
+}
+
+
+$my_box = imap_open("{".$server.":".$port."/".$protocol."/".$secur."}", $log, $pas); 
 if ($my_box){
   $n = imap_num_recent($my_box);
   echo $n;
@@ -10,7 +77,7 @@ if ($my_box){
     $time = date("H-i-s");
     $h = imap_headerinfo($my_box, $i);
     $emailFrom = $h->from[0]->mailbox."@".$h->from[0]->host;
-    $dir = "D:\emailin\\".$emailFrom."_".$time."_".$i;
+    $dir = $direction.$emailFrom."_".$time."_".$i;
     $bodyNameFile = $dir."\\"."body".$i.".txt";
     
     echo "<br>".$emailFrom;
@@ -23,7 +90,11 @@ if ($my_box){
       $body = iconv($struc->parts[0]->parameters[0]->value,'UTF-8',$body);
     }
     //echo "<br>".$body;
-    print_r(imap_fetchbody($my_box, $i, '3'));
+    //$s = imap_fetch_overview($my_box, $i); 
+    //print_r(imap_fetchbody($my_box, $i, '3'));
+    print_r($struc);
+   // print_r($s);
+    getInfile($struc, $direction, $mail_filetypes, $my_box, $i);
     file_put_contents($bodyNameFile, $body);
   } 
 }
