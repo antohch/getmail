@@ -14,7 +14,7 @@ $mail_filetypes = array(
   "PDF",
   "MIXED",
   "PLAIN",
-  "pdf",
+  "VND.OPENXMLFORMATS-OFFICEDOCUMENT.WORDPROCESSINGML.DOCUMENT"
 );
 
 
