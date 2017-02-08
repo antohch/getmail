@@ -16,7 +16,8 @@ $mail_filetypes = array(
   "PLAIN",
   "VND.OPENXMLFORMATS-OFFICEDOCUMENT.WORDPROCESSINGML.DOCUMENT"
 );
-
+$coderFrom = "UTF-8";
+$coderTo = "cp1251";
 
 function structure_encoding($encoding, $msg_body){
 
@@ -85,7 +86,7 @@ function get_imap_title($str){
 }
 
 
-function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i, $coder){
+function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i, $coder, $coderFrom, $coderTo){
   if(isset($msg_structure->parts)){
     for($j = 1, $f = 2; $j < count($msg_structure->parts); $j++, $f++){
       if(in_array($msg_structure->parts[$j]->subtype, $mail_filetypes )){
@@ -101,7 +102,7 @@ function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i, $code
         }
         echo "<br><br><br>".$mails_data[$i]["attachs"][$j]["name"]."<br>".imap_qprint($coder)."<br><br>";
         //file_put_contents($dir.iconv(imap_qprint($coder), "koi8-r", imap_qprint($mails_data[$i]["attachs"][$j]["name"])), $mails_data[$i]["attachs"][$j]["file"]);
-        file_put_contents($dir.iconv("UTF-8", "cp1251", imap_qprint($mails_data[$i]["attachs"][$j]["name"])), $mails_data[$i]["attachs"][$j]["file"]);
+        file_put_contents($dir.iconv($coderFrom, $coderTo, imap_qprint($mails_data[$i]["attachs"][$j]["name"])), $mails_data[$i]["attachs"][$j]["file"]);
 
 
 
@@ -121,7 +122,6 @@ if ($my_box){
     $emailFrom = $h->from[0]->mailbox."@".$h->from[0]->host;
     $dir = $direction.$emailFrom."_".$time."_".$i."\\";
     $bodyNameFile = $dir."\\"."body".$i.".txt";
-    
     echo "<br>".$emailFrom;
     mkdir($dir);
     $body = imap_fetchbody($my_box, $i, '1');
@@ -136,7 +136,7 @@ if ($my_box){
     //print_r(imap_fetchbody($my_box, $i, '3'));
     print_r($struc);
    // print_r($s);
-    getInfile($struc, $dir, $mail_filetypes, $my_box, $i, $struc->parts[0]->parts[0]->parameters[0]->value);
+    getInfile($struc, $dir, $mail_filetypes, $my_box, $i, $struc->parts[0]->parts[0]->parameters[0]->value, $coderFrom, $coderTo);
     file_put_contents($bodyNameFile, $body);
   } 
 }
