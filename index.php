@@ -10,7 +10,8 @@ $pas = "Bd9QMq2l";
 $direction = "D:\emailin\\";
 $mail_filetypes = array(
 	"MSWORD",
-  "BINARY"
+  "BINARY",
+  "PDF"
 );
 
 
@@ -46,6 +47,19 @@ function structure_encoding($encoding, $msg_body){
 	return $body;
 }
 
+function check_utf8($charset){
+
+	if(strtolower($charset) != "utf-8"){
+
+		return false;
+	}
+
+	return true;
+}
+function convert_to_utf8($in_charset, $str){
+
+	return iconv(strtolower($in_charset), "utf-8", $str);
+}
 
 function get_imap_title($str){
 
@@ -72,8 +86,7 @@ function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i, $code
   if(isset($msg_structure->parts)){
 
     for($j = 1, $f = 2; $j < count($msg_structure->parts); $j++, $f++){
-
-      if(in_array($msg_structure->parts[$j]->subtype, $mail_filetypes)){
+      if(in_array($msg_structure->parts[$j]->subtype, $mail_filetypes )){
 
         $mails_data[$i]["attachs"][$j]["type"] = $msg_structure->parts[$j]->subtype;
         $mails_data[$i]["attachs"][$j]["size"] = $msg_structure->parts[$j]->bytes;
@@ -82,7 +95,10 @@ function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i, $code
           $msg_structure->parts[$j]->encoding,
           imap_fetchbody($connection, $i, $f)
         );
-        echo "<br><br><br>".imap_qprint($mails_data[$i]["attachs"][$j]["name"])."<br>".imap_qprint($coder)."<br><br>";
+        if(empty($mails_data[$i]["attachs"][$j]["name"])){
+          $mails_data[$i]["attachs"][$j]["name"] = $msg_structure->parts[$j]->parameters[0]->value;
+        }
+        echo "<br><br><br>".$mails_data[$i]["attachs"][$j]["name"]."<br>".imap_qprint($coder)."<br><br>";
         file_put_contents($dir.imap_qprint($mails_data[$i]["attachs"][$j]["name"]), $mails_data[$i]["attachs"][$j]["file"]);
       }
     }
