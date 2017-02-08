@@ -11,7 +11,10 @@ $direction = "D:\emailin\\";
 $mail_filetypes = array(
 	"MSWORD",
   "BINARY",
-  "PDF"
+  "PDF",
+  "MIXED",
+  "PLAIN",
+  "pdf",
 );
 
 
@@ -84,10 +87,8 @@ function get_imap_title($str){
 
 function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i, $coder){
   if(isset($msg_structure->parts)){
-
     for($j = 1, $f = 2; $j < count($msg_structure->parts); $j++, $f++){
       if(in_array($msg_structure->parts[$j]->subtype, $mail_filetypes )){
-
         $mails_data[$i]["attachs"][$j]["type"] = $msg_structure->parts[$j]->subtype;
         $mails_data[$i]["attachs"][$j]["size"] = $msg_structure->parts[$j]->bytes;
         $mails_data[$i]["attachs"][$j]["name"] = get_imap_title($msg_structure->parts[$j]->parameters[0]->value);
@@ -99,7 +100,11 @@ function getInfile($msg_structure, $dir, $mail_filetypes, $connection, $i, $code
           $mails_data[$i]["attachs"][$j]["name"] = $msg_structure->parts[$j]->parameters[0]->value;
         }
         echo "<br><br><br>".$mails_data[$i]["attachs"][$j]["name"]."<br>".imap_qprint($coder)."<br><br>";
-        file_put_contents($dir.imap_qprint($mails_data[$i]["attachs"][$j]["name"]), $mails_data[$i]["attachs"][$j]["file"]);
+        //file_put_contents($dir.iconv(imap_qprint($coder), "koi8-r", imap_qprint($mails_data[$i]["attachs"][$j]["name"])), $mails_data[$i]["attachs"][$j]["file"]);
+        file_put_contents($dir.iconv("UTF-8", "cp1251", imap_qprint($mails_data[$i]["attachs"][$j]["name"])), $mails_data[$i]["attachs"][$j]["file"]);
+
+
+
       }
     }
   }
